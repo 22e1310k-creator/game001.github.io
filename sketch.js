@@ -62,13 +62,8 @@ function drawPlayer() {
 }
 
 function movePlayer() {
-  if (keyIsDown(LEFT_ARROW)) {
-    player.x -= 5;
-  }
-
-  if (keyIsDown(RIGHT_ARROW)) {
-    player.x += 5;
-  }
+  if (keyIsDown(LEFT_ARROW)) player.x -= 6;
+  if (keyIsDown(RIGHT_ARROW)) player.x += 6;
 
   player.x = constrain(player.x, 25, width - 25);
 }
@@ -81,7 +76,7 @@ function drawLasers() {
     strokeWeight(4);
     line(l.x, l.y, l.x, l.y - 22);
 
-    l.y -= 9;
+    l.y -= 10;
 
     if (l.y < 0) {
       lasers.splice(i, 1);
@@ -126,34 +121,30 @@ function drawAliens() {
 }
 
 function moveAliens() {
-  let hitEdge = false;
-
   for (let alien of aliens) {
-    alien.x += alien.speed;
+    alien.x += alien.speedX;
+    alien.y += alien.speedY;
 
-    if (alien.x > width - 30 || alien.x < 30) {
-      hitEdge = true;
+    // 左右の壁に当たったら反転
+    if (alien.x < 30 || alien.x > width - 30) {
+      alien.speedX *= -1;
     }
-  }
 
-  if (hitEdge) {
-    for (let alien of aliens) {
-      alien.speed *= -1;
-      alien.y += 20;
-    }
+    // 少し揺れるように動く
+    alien.x += sin(frameCount * alien.waveSpeed + alien.offset) * alien.waveSize;
   }
 }
 
 function enemyAttack() {
-  // 約1秒に1回、ランダムな敵が攻撃
-  if (frameCount % 60 === 0 && aliens.length > 0) {
-    let shooter = random(aliens);
-
-    enemyBullets.push({
-      x: shooter.x,
-      y: shooter.y + 20,
-      speed: 5
-    });
+  for (let alien of aliens) {
+    // 敵ごとに違う間隔で攻撃
+    if (frameCount % alien.attackInterval === 0) {
+      enemyBullets.push({
+        x: alien.x,
+        y: alien.y + 20,
+        speed: alien.bulletSpeed
+      });
+    }
   }
 }
 
@@ -256,12 +247,24 @@ function resetGame() {
   gameOver = false;
   clear = false;
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 8; i++) {
     aliens.push({
-      x: 70 + i * 90,
-      y: 80,
+      x: random(50, width - 50),
+      y: random(40, 120),
       size: 40,
-      speed: 2
+
+      // 敵ごとにバラバラの動き
+      speedX: random(-3, 3),
+      speedY: random(0.25, 0.8),
+
+      // ゆらゆら動き
+      waveSpeed: random(0.02, 0.06),
+      waveSize: random(0.5, 2),
+      offset: random(1000),
+
+      // 攻撃性能もバラバラ
+      attackInterval: floor(random(35, 100)),
+      bulletSpeed: random(4, 8)
     });
   }
 }
